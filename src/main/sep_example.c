@@ -3,7 +3,6 @@
 
 int main(void)
 {
-    float result = sep_parse("5-5+10+3");
-    printf("Result: %f\n", result);
+    sep_parse("3+4*4-5+2");
     return 0;
 }
