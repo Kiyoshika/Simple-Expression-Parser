@@ -3,7 +3,7 @@
 
 int main(void)
 {
-    float result = sep_parse("2-(5-2)*5");
+    float result = sep_parse("(5-3)*3-5*((3-1)/(3*4-3))");
     printf("%f\n", result);
     return 0;
 }

@@ -63,7 +63,6 @@ static void construct_linked_list(token* _token, token* _next, size_t* total_tok
         if (is_operator(expression[i]) && !parsing_parenthesis)
         {
             parse_token(&buff, expression, start_idx, (i-start_idx));
-            printf("Parsed Token: %s\n", buff);
             add_token(&_next, &root_token_set, buff, get_operator_enum_value(expression[i]));
             start_idx = i + 1;
             *total_tokens++;
@@ -85,12 +84,12 @@ static void construct_linked_list(token* _token, token* _next, size_t* total_tok
             {
                 inner_expression_idx_end = i;
                 parse_token(&buff, expression, inner_expression_idx_start, inner_expression_idx_end - inner_expression_idx_start);
-                printf("Parsed Inner Expression: %s\n", buff);
                 float result = sep_parse(buff);
                 char result_char[65] = {0};
                 gcvt(result, 10, result_char);
                 add_token(&_next, &root_token_set, result_char, get_operator_enum_value(expression[i+1]));
                 start_idx = i + 2;
+                i++; // increment i otherwise (i - start_idx) becomes negative when parsing token
                 parsing_parenthesis = false;
             }
         }
@@ -160,21 +159,12 @@ static float evaluate_final_expression(token* _token)
 
 float sep_parse(const char* expression)
 {
-    printf("CALLED PARSE\n");
     token* _token = malloc(sizeof(token));
     token_init(_token);
     token* _next = _token;
 
     size_t total_tokens = 0;
     construct_linked_list(_token, _next, &total_tokens, expression);
-
-    // evaluate linked list
-    token* temp = _token;
-    while (temp != NULL)
-    {
-        printf("Token Value: %f\nToken Operator: %d\n\n", temp->value, temp->operator);
-        temp = temp->next_token;
-    }
 
     compute_high_precedence_operators(_token);
     float result = evaluate_final_expression(_token);
