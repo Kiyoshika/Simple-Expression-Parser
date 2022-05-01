@@ -94,7 +94,8 @@ static void compute_high_precedence_operators(token* _token)
             temp->next_token = temp->next_token->next_token;
             free(free_token);
         }
-        temp = temp->next_token;
+        else
+            temp = temp->next_token;
     }
 }
 
@@ -102,6 +103,7 @@ static float evaluate_final_expression(token* _token)
 {
     token* temp = _token;
     float result = temp->value;
+    printf("CURRENT VALUE: %f\n", result);
     while (temp != NULL)
     {
         switch(temp->operator)
@@ -119,6 +121,7 @@ static float evaluate_final_expression(token* _token)
                 result /= temp->next_token->value;
                 break;
         }
+        printf("CURRENT VALUE: %f\n", result);
         temp = temp->next_token;
     }
     return result;
