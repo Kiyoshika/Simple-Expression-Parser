@@ -21,7 +21,7 @@ static int get_operator_enum_value(char c)
             return DIVIDE;
     }
 
-    return -1;
+    return 0;
 }
 
 static void add_token(token** root_token, bool* root_token_set, char* buff, operator _operator)
@@ -53,22 +53,55 @@ static void parse_token(char** buff, const char* expression, size_t start_idx, s
 static void construct_linked_list(token* _token, token* _next, size_t* total_tokens, const char* expression)
 {
     size_t start_idx = 0;
-    char* buff = malloc(65);
+    char* buff = calloc(65, 1);
     bool root_token_set = false;
+    bool parsing_parenthesis = false;
+    size_t parenthesis_count = 0;
+    size_t inner_expression_idx_start, inner_expression_idx_end;
     for (size_t i = 0; i < strlen(expression); ++i)
     {
-        if (is_operator(expression[i]))
+        if (is_operator(expression[i]) && !parsing_parenthesis)
         {
             parse_token(&buff, expression, start_idx, (i-start_idx));
+            printf("Parsed Token: %s\n", buff);
             add_token(&_next, &root_token_set, buff, get_operator_enum_value(expression[i]));
             start_idx = i + 1;
             *total_tokens++;
-        }  
+        }
+        else if (expression[i] == '(' && !parsing_parenthesis)
+        {
+            parenthesis_count++;
+            parsing_parenthesis = true;
+            inner_expression_idx_start = i + 1;
+        }
+        else if (expression[i] == '(' && parsing_parenthesis)
+        {
+            parenthesis_count++;
+        }
+        else if (expression[i] == ')' && parsing_parenthesis)
+        {
+            parenthesis_count--;
+            if (parenthesis_count == 0)
+            {
+                inner_expression_idx_end = i;
+                parse_token(&buff, expression, inner_expression_idx_start, inner_expression_idx_end - inner_expression_idx_start);
+                printf("Parsed Inner Expression: %s\n", buff);
+                float result = sep_parse(buff);
+                char result_char[65] = {0};
+                gcvt(result, 10, result_char);
+                add_token(&_next, &root_token_set, result_char, get_operator_enum_value(expression[i+1]));
+                start_idx = i + 2;
+                parsing_parenthesis = false;
+            }
+        }
     }
     // end of line
-    parse_token(&buff, expression, start_idx, strlen(expression));
-    add_token(&_next, &root_token_set, buff, NONE);
-    *total_tokens++;
+    if (strlen(buff) > 0)
+    {
+        parse_token(&buff, expression, start_idx, strlen(expression));
+        add_token(&_next, &root_token_set, buff, NONE);
+        *total_tokens++;
+    }
     free(buff);
 }
 
@@ -103,7 +136,6 @@ static float evaluate_final_expression(token* _token)
 {
     token* temp = _token;
     float result = temp->value;
-    printf("CURRENT VALUE: %f\n", result);
     while (temp != NULL)
     {
         switch(temp->operator)
@@ -121,7 +153,6 @@ static float evaluate_final_expression(token* _token)
                 result /= temp->next_token->value;
                 break;
         }
-        printf("CURRENT VALUE: %f\n", result);
         temp = temp->next_token;
     }
     return result;
@@ -129,6 +160,7 @@ static float evaluate_final_expression(token* _token)
 
 float sep_parse(const char* expression)
 {
+    printf("CALLED PARSE\n");
     token* _token = malloc(sizeof(token));
     token_init(_token);
     token* _next = _token;
@@ -136,15 +168,16 @@ float sep_parse(const char* expression)
     size_t total_tokens = 0;
     construct_linked_list(_token, _next, &total_tokens, expression);
 
-    compute_high_precedence_operators(_token);
-    float result = evaluate_final_expression(_token);
-
+    // evaluate linked list
     token* temp = _token;
     while (temp != NULL)
     {
-        printf("Value: %f\nOperator: %d\n\n", temp->value, temp->operator);
+        printf("Token Value: %f\nToken Operator: %d\n\n", temp->value, temp->operator);
         temp = temp->next_token;
     }
+
+    compute_high_precedence_operators(_token);
+    float result = evaluate_final_expression(_token);
 
     // free memory
     token* _temp;
